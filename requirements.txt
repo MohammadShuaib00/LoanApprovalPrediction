@@ -1,0 +1,19 @@
+numpy
+pandas
+PyYAML
+python-dotenv
+pymongo
+pymongo[srv]
+scikit-learn
+mlflow
+pyaml
+python-multipart
+ensure
+matplotlib
+seaborn
+joblib
+notebook
+tqdm
+types-pyYAML
+
+-e .

@@ -1,0 +1,2 @@
+DROP_COLUMNS:
+  - Loan_ID: int64

@@ -1,2 +1,13 @@
-DROP_COLUMNS:
-  - Loan_ID: int64
+COLUMNS:
+  - No_of_Dependents: int64
+  - Education: object
+  - Self_Employed: object
+  - Income_Annum: int64
+  - Loan_Amount: int64
+  - Loan_Term: int64
+  - CIBIL_Score: int64
+  - Residential_Assets_Value: int64
+  - Commercial_Assets_Value: int64
+  - Luxury_Assets_Value: int64
+  - Bank_Asset_Value: int64
+  - Loan_Status: object

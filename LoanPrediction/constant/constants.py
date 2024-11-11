@@ -22,3 +22,12 @@ DATA_FEATURE_STORE_DIR: str = "feature_store"
 DATA_FEATURE_STORE_FILE_PATH: str = "raw.csv"
 DATA_INGESTED_STORE_DIR: str = "ingested"
 TRAIN_TEST_SPLIT_RATIO: float = 0.2
+
+"""
+Data Validation related constant start with Data_INGESTION VAR NAME
+"""
+DATA_VALIDATION_DIR: str = "data_validation"
+DATA_VALID_DIR: str = "validated"
+DATA_INVALID_DIR: str = "invalided"
+DATA_DRIFT_REPORT_DIR:str = "validated_report"
+DRIFT_REPORT_FILE_PATH: bool = "report.yaml"

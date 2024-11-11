@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from LoanPrediction.constant import constants
 from LoanPrediction.logger.logging import logging
 from LoanPrediction.exception.exception import LoanException
+from LoanPrediction.constant import constants
 
 print(f"Artifact dir pipeline: {constants.ARTIFACT_DIR}")
 
@@ -46,3 +47,37 @@ class DataIngestionConfig:
         self.split_train_test_split_ratio: float = constants.TRAIN_TEST_SPLIT_RATIO
         self.collection_name: str = constants.COLLECTION_NAME
         self.database_name: str = constants.DATABASE_NAME
+
+
+class DataValidationConfig:
+    def __init__(self, training_pipeline_config: TrainingPipelineConfig):
+        try:
+            self.training_pipeline_config = training_pipeline_config
+            self.validation_dir = os.path.join(
+                training_pipeline_config.artifact_dir, constants.DATA_VALIDATION_DIR
+            )
+
+            self.data_valid_train_file_path: str = os.path.join(
+                self.validation_dir, constants.DATA_VALID_DIR, constants.TRAIN_FILE_PATH
+            )
+            self.data_valid_test_file_path: str = os.path.join(
+                self.validation_dir, constants.DATA_VALID_DIR, constants.TEST_FILE_PATH
+            )
+
+            self.data_invalid_train_file_path: str = os.path.join(
+                self.validation_dir,
+                constants.DATA_INVALID_DIR,
+                constants.TRAIN_FILE_PATH,
+            )
+            self.data_invalid_test_file_path: str = os.path.join(
+                self.validation_dir,
+                constants.DATA_INVALID_DIR,
+                constants.TEST_FILE_PATH,
+            )
+            self.data_report_file_path: bool = os.path.join(
+                self.validation_dir,
+                constants.DATA_DRIFT_REPORT_DIR,
+                constants.DRIFT_REPORT_FILE_PATH,
+            )
+        except Exception as e:
+            raise LoanException(e, sys.exc_info())

@@ -81,3 +81,27 @@ class DataValidationConfig:
             )
         except Exception as e:
             raise LoanException(e, sys.exc_info())
+
+
+class DataTransformationConfig:
+    def __init__(self, training_pipeline_config: TrainingPipelineConfig):
+        try:
+            self.training_pipeline_config: str = training_pipeline_config
+
+            self.data_transformation_dir: str = os.path.join(
+                self.training_pipeline_config.artifact_dir,
+                constants.DATA_TRANSFORMATION_DIR,
+            )
+            self.data_transformed_train_file_path: str = os.path.join(
+                self.data_transformation_dir,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_DIR,
+                constants.TRAIN_FILE_PATH,
+            )
+            self.data_transformation_test_file_path: str = os.path.join(
+                self.data_transformation_dir,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_DIR,
+                constants.TEST_FILE_PATH,
+            )
+
+        except Exception as e:
+            raise LoanException(e, sys.exc_info())

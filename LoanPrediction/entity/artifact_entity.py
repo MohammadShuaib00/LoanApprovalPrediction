@@ -17,3 +17,9 @@ class DataValidationArtifact:
     valid_test_file_path: str
     invalid_train_file_path: str
     invalid_test_file_path: str
+
+
+@dataclass
+class DataTransformationArtifact:
+    data_transformed_train_file_path: str
+    data_transformed_test_file_path: str

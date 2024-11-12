@@ -31,3 +31,11 @@ DATA_VALID_DIR: str = "validated"
 DATA_INVALID_DIR: str = "invalided"
 DATA_DRIFT_REPORT_DIR:str = "validated_report"
 DRIFT_REPORT_FILE_PATH: bool = "report.yaml"
+
+"""
+Data transformation related constant
+"""
+DATA_TRANSFORMATION_DIR:str = "data_transformation"
+DATA_TRANSFORMATION_TRANSFORMED_DIR:str = "transformed"
+DATA_TRANSFORMATION_TRANSFORMED_OBJECT_DIR:str = "transformed_object"
+DATA_TRANSFORMATION_TRANSFORMED_OBJECT_FILE_PATH:str = "preprocessor.pkl"

@@ -22,8 +22,12 @@ if __name__ == "__main__":
         )
         logging.info("Data Validation Pipeline completed successfully.")
 
-        training_pipeline.started_data_transformation(data_validation_artifact)
+        data_transformation_artifact = training_pipeline.started_data_transformation(data_validation_artifact)
         logging.info("Data Transformation Pipeline Completed Successfully ")
+        
+        training_pipeline.start_model_trainer(data_transformation_artifact)   
+        
+        
 
         logging.info("Loan Prediction Training Pipeline completed successfully.")
 

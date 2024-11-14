@@ -9,15 +9,18 @@ from LoanPrediction.entity.config_entity import (
     TrainingPipelineConfig,
     DataValidationConfig,
     DataTransformationConfig,
+    ModelTrainerConfig
 )
 from LoanPrediction.entity.artifact_entity import (
     DataIngestionArtifact,
     DataValidationArtifact,
     DataTransformationArtifact,
+    ModelTrainerArtifact
 )
 from LoanPrediction.components.data_ingestion import DataIngestion
 from LoanPrediction.components.data_validation import DataValidation
 from LoanPrediction.components.data_transformation import DataTransformation
+from LoanPrediction.components.model_trainer import ModelTrainer
 
 
 class TrainingPipeline:
@@ -72,5 +75,22 @@ class TrainingPipeline:
             )
             logging.info("Completed Data Transformation Pipeline")
             return data_transformation_artifact
+        except Exception as e:
+            raise LoanException(e, sys.exc_info())
+
+    def start_model_trainer(
+        self, data_transformation_artifact: DataTransformationArtifact
+    ):
+        try:
+            logging.info("Started Model Trainer Pipeline")
+            model_trainer_config = ModelTrainerConfig(
+                self.training_pipeline_config
+            )
+            model_trainer = ModelTrainer(
+                model_trainer_config,data_transformation_artifact
+            )
+            model_trainer_artifact = model_trainer.initiate_model_trainer()
+            logging.info("Model Trainer Pipeline Completed")
+            return model_trainer_artifact
         except Exception as e:
             raise LoanException(e, sys.exc_info())

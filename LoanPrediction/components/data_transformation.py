@@ -183,7 +183,9 @@ class DataTransformation:
                 header=True,
             )
             test_data_final.to_csv(
-                self.data_transformation_config.data_transformation_test_file_path
+                self.data_transformation_config.data_transformation_test_file_path,
+                index=False,
+                header=True,
             )
 
             logging.info("Storing the file into artifact dir")

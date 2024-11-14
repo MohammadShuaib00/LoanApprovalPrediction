@@ -105,3 +105,27 @@ class DataTransformationConfig:
 
         except Exception as e:
             raise LoanException(e, sys.exc_info())
+
+
+class ModelTrainerConfig:
+    def __init__(self, training_pipeline_config: TrainingPipelineConfig):
+        try:
+            self.training_pipeline_config: str = training_pipeline_config
+            self.model_trainer_dir: str = os.path.join(
+                self.training_pipeline_config.artifact_dir, constants.MODEL_TRAINER_DIR
+            )
+            self.model_trainer_model_dir: str = os.path.join(
+                self.model_trainer_dir, constants.MODEL_TRAINER_MODEL_DIR
+            )
+
+            self.model_trainer_file_path: str = os.path.join(
+                self.model_trainer_model_dir, constants.MODEL_TRAINER_FILE_PATH
+            )
+            self.model_trainer_expexted_score: float = (
+                constants.MODEL_TRAINER_EXPECTED_SCORE
+            )
+            self.model_trainer_over_fitting_under_fitting_threshold: float = (
+                constants.MODEL_TRAINER_OVER_FITTING_UNDER_FITTING_THRESHOLD
+            )
+        except Exception as e:
+            raise LoanException(e, sys.exc_info())

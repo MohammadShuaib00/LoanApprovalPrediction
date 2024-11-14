@@ -15,5 +15,6 @@ joblib
 notebook
 tqdm
 types-pyYAML
+dagshub
 
 -e .

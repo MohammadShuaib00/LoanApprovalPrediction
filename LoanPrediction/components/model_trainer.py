@@ -19,6 +19,13 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from LoanPrediction.utils.common import evaluate_models, save_object
+import mlflow
+from LoanPrediction.utils.metric import get_classification_metric
+import dagshub
+
+dagshub.init(
+    repo_owner="mohammadshuaib3455", repo_name="LoanApprovalPrediction", mlflow=True
+)
 
 
 class ModelTrainer:
@@ -30,6 +37,16 @@ class ModelTrainer:
         try:
             self.model_training_config = model_training_config
             self.data_transformation_artifact = data_transformation_artifact
+        except Exception as e:
+            raise LoanException(e, sys.exc_info())
+
+    def track_mlflow(self, best_model, classification_metric):
+        try:
+            with mlflow.start_run():
+                mlflow.log_metric("f1_score", classification_metric.f1_score)
+                mlflow.log_metric("precision", classification_metric.precision_score)
+                mlflow.log_metric("recall_score", classification_metric.recall_score)
+                mlflow.sklearn.log_model(best_model, "model")
         except Exception as e:
             raise LoanException(e, sys.exc_info())
 
@@ -45,9 +62,9 @@ class ModelTrainer:
             # Define models
             models = {
                 "Logistic Regression": LogisticRegression(max_iter=1000),
-                "Random Forest": RandomForestClassifier(),
+                "Random Forest": RandomForestClassifier(verbose=1),
                 "AdaBoost": AdaBoostClassifier(),
-                "Support Vector Machine": SVC(),
+                "Support Vector Machine": SVC(verbose=1),
                 "K-Nearest Neighbors": KNeighborsClassifier(),
                 "Decision Tree": DecisionTreeClassifier(),
             }
@@ -99,7 +116,7 @@ class ModelTrainer:
                 list(model_report.values()).index(best_model_score)
             ]
             best_model = models[best_model_name]
-            print("Best Model Name is : ",best_model_name)
+            print("Best Model Name is : ", best_model_name)
 
             # Train the best model
             best_model.fit(X_train, y_train)
@@ -110,11 +127,15 @@ class ModelTrainer:
                 y_true=y_train, y_pred=y_train_pred
             )
 
+            # Track the experiment with Mlflow
+            self.track_mlflow(best_model, classification_train_metric)
+
             # Evaluate on test data
             y_test_pred = best_model.predict(X_test)
             classification_test_metric = get_classification_score(
                 y_true=y_test, y_pred=y_test_pred
             )
+            self.track_mlflow(best_model, classification_test_metric)
 
             # Log the metrics
             logging.info(f"Training Metrics: {classification_train_metric}")
@@ -128,6 +149,8 @@ class ModelTrainer:
             save_object(
                 self.model_training_config.model_trainer_file_path, obj=best_model
             )
+
+            save_object("final_models/model.pkl", best_model)
 
             # Model trainer Artifact
             model_trainer_artifact = ModelTrainerArtifact(

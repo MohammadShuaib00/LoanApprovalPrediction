@@ -92,15 +92,20 @@ class DataTransformationConfig:
                 self.training_pipeline_config.artifact_dir,
                 constants.DATA_TRANSFORMATION_DIR,
             )
+            self.data_transformed_object_file_path: str = os.path.join(
+                self.data_transformation_dir,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_OBJECT_DIR,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_OBJECT_FILE_PATH,
+            )
             self.data_transformed_train_file_path: str = os.path.join(
                 self.data_transformation_dir,
                 constants.DATA_TRANSFORMATION_TRANSFORMED_DIR,
-                constants.TRAIN_FILE_PATH,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_TRAIN_FILE_PATH,
             )
             self.data_transformation_test_file_path: str = os.path.join(
                 self.data_transformation_dir,
                 constants.DATA_TRANSFORMATION_TRANSFORMED_DIR,
-                constants.TEST_FILE_PATH,
+                constants.DATA_TRANSFORMATION_TRANSFORMED_TEST_FILE_PATH,
             )
 
         except Exception as e:
@@ -121,6 +126,9 @@ class ModelTrainerConfig:
             self.model_trainer_file_path: str = os.path.join(
                 self.model_trainer_model_dir, constants.MODEL_TRAINER_FILE_PATH
             )
+            self.preprocessing_object_file_path: str = os.path.join(
+                self.model_trainer_dir, constants.PREPROCESSING_OBJECT_FILE_PATH
+            )
             self.model_trainer_expexted_score: float = (
                 constants.MODEL_TRAINER_EXPECTED_SCORE
             )
@@ -129,3 +137,17 @@ class ModelTrainerConfig:
             )
         except Exception as e:
             raise LoanException(e, sys.exc_info())
+
+
+class ModelEvaluationConfig:
+
+    def __init__(self, training_pipeline_config: TrainingPipelineConfig):
+        self.training_pipeline_config = training_pipeline_config
+        self.model_evaluation_dir: str = os.path.join(
+            self.training_pipeline_config.artifact_dir,
+            constants.MODEL_EVALUATION_DIR_NAME,
+        )
+        self.report_file_path = os.path.join(
+            self.model_evaluation_dir, constants.MODEL_EVALUATION_REPORT_NAME
+        )
+        self.change_threshold = constants.MODEL_EVALUATION_CHANGED_THRESHOLD_SCORE

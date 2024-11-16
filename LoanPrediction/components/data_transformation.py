@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -7,7 +8,8 @@ from LoanPrediction.logger.logging import logging
 from LoanPrediction.entity.artifact_entity import *
 from LoanPrediction.entity.config_entity import *
 from scipy import stats
-from sklearn.preprocessing import MinMaxScaler
+from LoanPrediction.pipeline.preprocessing import preprocessing_pipeline
+from LoanPrediction.utils.common import *
 
 
 class DataTransformation:
@@ -48,14 +50,16 @@ class DataTransformation:
     ) -> pd.DataFrame:
         try:
             logging.info("Handling outliers")
-            outliers_all = pd.DataFrame()
+            outliers_summary = []
 
             # Z-score method for outlier detection
             for col in continuous_columns:
                 logging.info(f"Checking outliers for column {col} using Z-score method")
                 z_scores = stats.zscore(df[col])
                 outliers_col_z = df[abs(z_scores) > z_threshold]
-                outliers_all = pd.concat([outliers_all, outliers_col_z])
+                outliers_summary.append(
+                    {"column": col, "z_outliers": outliers_col_z.shape[0]}
+                )
 
             # IQR Method for outlier detection
             for col in continuous_columns:
@@ -71,10 +75,9 @@ class DataTransformation:
                     df[col] = np.where(df[col] > upper_bound, upper_bound, df[col])
                     df[col] = np.where(df[col] < lower_bound, lower_bound, df[col])
 
-            # Log outliers detected
-            if not outliers_all.empty:
-                logging.info(f"Outliers detected: {outliers_all.shape[0]} rows")
-                outliers_all.to_csv("outliers_log.csv", index=False)
+            # Log outlier summary
+            if outliers_summary:
+                logging.info(f"Outliers detected in columns: {outliers_summary}")
 
             return df
 
@@ -82,34 +85,21 @@ class DataTransformation:
             raise LoanException(f"Error handling outliers: {e}", sys.exc_info())
 
     @staticmethod
-    def label_encode_features(df: pd.DataFrame) -> pd.DataFrame:
+    def label_encode_target(series: pd.Series) -> pd.Series:
         try:
-            # Automatically identify categorical features
-            categorical_features = df.select_dtypes(include=["object"]).columns.tolist()
-            logging.info(f"Identified categorical features: {categorical_features}")
+            if series.empty:
+                raise ValueError("The input series is empty.")
 
-            # Encode categorical features in place
-            for col in categorical_features:
-                le = LabelEncoder()
-                df[col] = le.fit_transform(df[col])
+            logging.info("Label encoding the target variable.")
 
-            return df
+            # Encode the target variable
+            le = LabelEncoder()
+            encoded_series = le.fit_transform(series)
+
+            logging.info(f"Classes in the target variable: {list(le.classes_)}")
+            return pd.Series(encoded_series, name=series.name)
         except Exception as e:
             raise LoanException(e, sys.exc_info())
-
-    # Function to normalize data
-    @staticmethod
-    def normalize_data(df):
-        # Initialize MinMaxScaler to scale features to the range [0, 1]
-        scaler = MinMaxScaler()
-
-        # Select only numeric columns for normalization
-        numeric_columns = df.select_dtypes(include=["float64", "int64"]).columns
-
-        # Apply normalization on the numeric columns
-        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
-
-        return df
 
     def initiate_data_transformation(self):
         try:
@@ -125,17 +115,20 @@ class DataTransformation:
             test_file_path = self.data_validation_artifact.valid_test_file_path
             train_data = DataTransformation.read_data(train_file_path)
             test_data = DataTransformation.read_data(test_file_path)
+
+            # Validate train and test data have the same columns
+            assert list(train_data.columns) == list(
+                test_data.columns
+            ), "Mismatch in train and test columns."
+
             logging.info(f"Shape of train data: {train_data.shape}")
             logging.info(f"Shape of test data: {test_data.shape}")
 
-            continuous_columns = [
-                "Loan_Amount",
-                "Income_Annum",
-                "Residential_Assets_Value",
-                "Commercial_Assets_Value",
-                "Luxury_Assets_Value",
-                "Bank_Asset_Value",
-            ]
+            # Automatically detect continuous columns
+            continuous_columns = train_data.select_dtypes(
+                include=["float64", "int64"]
+            ).columns.tolist()
+            logging.info(f"Continuous columns identified: {continuous_columns}")
 
             # Handle outliers
             train_data = self.handle_outlier(
@@ -152,44 +145,55 @@ class DataTransformation:
                 f"Outliers removed from test_data, resulting shape: {test_data.shape}"
             )
 
-            # Label encode categorical features automatically detected in each dataset
-            train_data = self.label_encode_features(train_data)
-            test_data = self.label_encode_features(test_data)
-            print(train_data.head())
-            logging.info("Label encoding completed for train and test data.")
-
             # Splitting features and target
             input_feature_train_df = train_data.drop(columns=["Loan_Status"], axis=1)
             target_feature_train_df = train_data["Loan_Status"]
+            target_feature_train_df = DataTransformation.label_encode_target(
+                target_feature_train_df
+            )
+
+            # Splitting the test data into features and target
             input_feature_test_df = test_data.drop(columns=["Loan_Status"], axis=1)
             target_feature_test_df = test_data["Loan_Status"]
-
-            # Normalize the features
-            X_train = DataTransformation.normalize_data(input_feature_train_df)
-            X_test = DataTransformation.normalize_data(input_feature_test_df)
-            logging.info("Normalization Completed")
-
-            # Concatenate the normalized features with the target column
-            train_data_final = pd.concat([X_train, target_feature_train_df], axis=1)
-            test_data_final = pd.concat([X_test, target_feature_test_df], axis=1)
-
-            transformed_dir = os.path.dirname(
-                self.data_transformation_config.data_transformed_train_file_path
+            target_feature_test_df = DataTransformation.label_encode_target(
+                target_feature_test_df
             )
-            os.makedirs(transformed_dir, exist_ok=True)
-            train_data_final.to_csv(
+
+            # Preprocessing and transformation
+            preprocessor_object = preprocessing_pipeline.fit(input_feature_train_df)
+            transformed_input_train_df = preprocessor_object.transform(
+                input_feature_train_df
+            )
+            transformed_input_test_df = preprocessor_object.transform(
+                input_feature_test_df
+            )
+
+            # Prepare numpy arrays
+            train_arr = np.c_[
+                transformed_input_train_df, np.array(target_feature_train_df)
+            ]
+            test_arr = np.c_[
+                transformed_input_test_df, np.array(target_feature_test_df)
+            ]
+
+            save_numpy_array_data(
                 self.data_transformation_config.data_transformed_train_file_path,
-                index=False,
-                header=True,
+                train_arr,
             )
-            test_data_final.to_csv(
+
+            save_numpy_array_data(
                 self.data_transformation_config.data_transformation_test_file_path,
-                index=False,
-                header=True,
+                test_arr,
+            )
+
+            save_object(
+                self.data_transformation_config.data_transformed_object_file_path,
+                preprocessor_object,
             )
 
             logging.info("Storing the file into artifact dir")
             data_transformation_artifact = DataTransformationArtifact(
+                data_transformed_object_file_path=self.data_transformation_config.data_transformed_object_file_path,
                 data_transformed_train_file_path=self.data_transformation_config.data_transformed_train_file_path,
                 data_transformed_test_file_path=self.data_transformation_config.data_transformation_test_file_path,
             )

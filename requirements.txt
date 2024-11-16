@@ -3,10 +3,8 @@ pandas
 PyYAML
 python-dotenv
 pymongo
-pymongo[srv]
 scikit-learn
 mlflow
-pyaml
 python-multipart
 ensure
 matplotlib
@@ -16,5 +14,6 @@ notebook
 tqdm
 types-pyYAML
 dagshub
-
--e .
+fastapi
+uvicorn
+pyaml

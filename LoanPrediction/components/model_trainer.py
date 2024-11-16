@@ -12,6 +12,7 @@ from LoanPrediction.entity.artifact_entity import (
 from LoanPrediction.utils.metric.get_classification_metric import (
     get_classification_score,
 )
+from LoanPrediction.utils.common import *
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -47,13 +48,6 @@ class ModelTrainer:
                 mlflow.log_metric("precision", classification_metric.precision_score)
                 mlflow.log_metric("recall_score", classification_metric.recall_score)
                 mlflow.sklearn.log_model(best_model, "model")
-        except Exception as e:
-            raise LoanException(e, sys.exc_info())
-
-    @staticmethod
-    def read_data(file_path: str) -> pd.DataFrame:
-        try:
-            return pd.read_csv(file_path)
         except Exception as e:
             raise LoanException(e, sys.exc_info())
 
@@ -150,11 +144,24 @@ class ModelTrainer:
                 self.model_training_config.model_trainer_file_path, obj=best_model
             )
 
+            preprocessing_obj_path = (
+                self.data_transformation_artifact.data_transformed_object_file_path
+            )
+
+            preprocessing_obj = load_object(preprocessing_obj_path)
+
+            save_object(
+                self.model_training_config.preprocessing_object_file_path,
+                preprocessing_obj,
+            )
+
             save_object("final_models/model.pkl", best_model)
+            save_object("final_models/preprocessing.pkl", preprocessing_obj)
 
             # Model trainer Artifact
             model_trainer_artifact = ModelTrainerArtifact(
                 trained_model_file_path=self.model_training_config.model_trainer_file_path,
+                preprocessing_object_file_path=self.model_training_config.preprocessing_object_file_path,
                 train_metric_artifact=classification_train_metric,
                 test_metric_artifact=classification_test_metric,
             )
@@ -180,14 +187,15 @@ class ModelTrainer:
             )
 
             logging.info("Loading the training data and test data")
-            train_data = ModelTrainer.read_data(train_file_path)
-            test_data = ModelTrainer.read_data(test_file_path)
+            train_arr = load_numpy_array_data(train_file_path)
+            test_arr = load_numpy_array_data(test_file_path)
 
-            # Prepare features and labels
-            X_train = train_data.drop(columns=["Loan_Status"])
-            y_train = train_data["Loan_Status"]
-            X_test = test_data.drop(columns=["Loan_Status"])
-            y_test = test_data["Loan_Status"]
+            X_train, y_train, X_test, y_test = (
+                train_arr[:, :-1],
+                train_arr[:, -1],
+                test_arr[:, :-1],
+                test_arr[:, -1],
+            )
 
             logging.info(
                 f"X_train {X_train.shape} X_test {X_test.shape}, y_train {y_train.shape} and y_test {y_test.shape}"
